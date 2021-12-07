@@ -20,7 +20,11 @@ struct SubmarineState {
 
 impl SubmarineState {
     fn new() -> Self {
-        Self { depth: 0, position: 0, aim: 0 }
+        Self {
+            depth: 0,
+            position: 0,
+            aim: 0,
+        }
     }
 }
 
@@ -41,7 +45,7 @@ impl FromStr for Command {
             "forward" => Ok(Command::Forward(distance)),
             "up" => Ok(Command::Up(distance)),
             "down" => Ok(Command::Down(distance)),
-            _ => Err("unknown error")?
+            _ => Err("unknown error")?,
         }
     }
 }
@@ -57,13 +61,24 @@ impl Command {
 
     fn execute_on_state(&self, s: &SubmarineState) -> SubmarineState {
         match self {
-            Command::Forward(d) => SubmarineState { depth: s.depth + s.aim * d, position: s.position + d, aim: s.aim },
-            Command::Up(d) => SubmarineState { depth: s.depth, position: s.position, aim: s.aim - d },
-            Command::Down(d) => SubmarineState { depth: s.depth, position: s.position, aim: s.aim + d },
+            Command::Forward(d) => SubmarineState {
+                depth: s.depth + s.aim * d,
+                position: s.position + d,
+                aim: s.aim,
+            },
+            Command::Up(d) => SubmarineState {
+                depth: s.depth,
+                position: s.position,
+                aim: s.aim - d,
+            },
+            Command::Down(d) => SubmarineState {
+                depth: s.depth,
+                position: s.position,
+                aim: s.aim + d,
+            },
         }
     }
 }
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -72,13 +87,24 @@ fn main() {
     let file = File::open(input_path).expect("failed to open INPUT file");
     let reader = BufReader::new(file);
 
-    let commands: Vec<Command> = reader.lines().map(|x| x.expect("failed to read line").parse::<Command>().expect("failed to parse command")).collect();
-    let final_position = commands.iter().fold(Point { x: 0, y: 0 }, |p, c| c.execute_on_point(&p));
+    let commands: Vec<Command> = reader
+        .lines()
+        .map(|x| {
+            x.expect("failed to read line")
+                .parse::<Command>()
+                .expect("failed to parse command")
+        })
+        .collect();
+    let final_position = commands
+        .iter()
+        .fold(Point { x: 0, y: 0 }, |p, c| c.execute_on_point(&p));
 
     println!("{:?}", final_position);
     println!("{}", final_position.x * final_position.y);
 
-    let final_state = commands.iter().fold(SubmarineState::new(), |s, c| c.execute_on_state(&s));
+    let final_state = commands
+        .iter()
+        .fold(SubmarineState::new(), |s, c| c.execute_on_state(&s));
     println!("{:?}", final_state);
     println!("{}", final_state.depth * final_state.position);
 }
@@ -99,9 +125,33 @@ mod tests {
         ];
 
         let mut commands_itr = commands.into_iter();
-        assert_eq!(commands_itr.next().unwrap().execute_on_point(&Point { x: 0, y: 0 }), Point { x: 5, y: 0 });
-        assert_eq!(commands_itr.next().unwrap().execute_on_point(&Point { x: 5, y: 0 }), Point { x: 5, y: 5 });
-        assert_eq!(commands_itr.next().unwrap().execute_on_point(&Point { x: 5, y: 5 }), Point { x: 13, y: 5 });
-        assert_eq!(commands_itr.next().unwrap().execute_on_point(&Point { x: 13, y: 5 }), Point { x: 13, y: 2 });
+        assert_eq!(
+            commands_itr
+                .next()
+                .unwrap()
+                .execute_on_point(&Point { x: 0, y: 0 }),
+            Point { x: 5, y: 0 }
+        );
+        assert_eq!(
+            commands_itr
+                .next()
+                .unwrap()
+                .execute_on_point(&Point { x: 5, y: 0 }),
+            Point { x: 5, y: 5 }
+        );
+        assert_eq!(
+            commands_itr
+                .next()
+                .unwrap()
+                .execute_on_point(&Point { x: 5, y: 5 }),
+            Point { x: 13, y: 5 }
+        );
+        assert_eq!(
+            commands_itr
+                .next()
+                .unwrap()
+                .execute_on_point(&Point { x: 13, y: 5 }),
+            Point { x: 13, y: 2 }
+        );
     }
 }

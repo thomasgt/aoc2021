@@ -16,16 +16,22 @@ impl BitCounter {
 
     fn accumulate(&self, x: usize) -> Self {
         let mut result = self.clone();
-        result.counts.iter_mut().enumerate().for_each(|(i, c)| *c += x >> i & 1);
+        result
+            .counts
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, c)| *c += x >> i & 1);
         result
     }
 
     fn convert_with_rule<F>(&self, mut f: F) -> usize
-        where F: FnMut(usize) -> bool
+    where
+        F: FnMut(usize) -> bool,
     {
-        self.counts.iter().enumerate().fold(0, |acc, (i, x)| {
-            acc + ((f(*x) as usize) << i)
-        })
+        self.counts
+            .iter()
+            .enumerate()
+            .fold(0, |acc, (i, x)| acc + ((f(*x) as usize) << i))
     }
 }
 
@@ -35,24 +41,43 @@ fn parse_report(records: &Vec<String>) -> (usize, usize, usize, usize) {
 
     println!("parsing {} {}-bit records", n_records, n_bits);
 
-    let record_values: Vec<usize> = records.iter().map(|x| usize::from_str_radix(x, 2).expect("failed to parse line")).collect();
+    let record_values: Vec<usize> = records
+        .iter()
+        .map(|x| usize::from_str_radix(x, 2).expect("failed to parse line"))
+        .collect();
 
-    let counter = record_values.iter().fold(BitCounter::new(n_bits), |acc, x| acc.accumulate(*x));
+    let counter = record_values
+        .iter()
+        .fold(BitCounter::new(n_bits), |acc, x| acc.accumulate(*x));
 
     let gamma = counter.convert_with_rule(|x| x > n_records / 2);
     let epsilon = counter.convert_with_rule(|x| x < n_records / 2);
 
     // use data from gamma to get initial partitions
-    let (o2_partition, co2_partition): (Vec<usize>, Vec<usize>) = record_values.iter().partition(|x| ((*x & gamma) >> (n_bits - 1)) != 0);
-    let o2_rate = *recursive_partition_filter_by_size(&o2_partition, n_bits - 2, true).get(0).expect("failed to find o2 rating");
-    let co2_rate = *recursive_partition_filter_by_size(&co2_partition, n_bits - 2, false).get(0).expect("failed to find co2 rating");
+    let (o2_partition, co2_partition): (Vec<usize>, Vec<usize>) = record_values
+        .iter()
+        .partition(|x| ((*x & gamma) >> (n_bits - 1)) != 0);
+    let o2_rate = *recursive_partition_filter_by_size(&o2_partition, n_bits - 2, true)
+        .get(0)
+        .expect("failed to find o2 rating");
+    let co2_rate = *recursive_partition_filter_by_size(&co2_partition, n_bits - 2, false)
+        .get(0)
+        .expect("failed to find co2 rating");
 
     (gamma, epsilon, o2_rate, co2_rate)
 }
 
-fn recursive_partition_filter_by_size(v: &Vec<usize>, bit: usize, keep_largest: bool) -> Vec<usize> {
-    let (set_partition, clear_partition): (Vec<usize>, Vec<usize>) = v.iter().partition(|x| ((*x >> bit) & 1) != 0);
-    let keep_partition = match (keep_largest, set_partition.len().cmp(&clear_partition.len())) {
+fn recursive_partition_filter_by_size(
+    v: &Vec<usize>,
+    bit: usize,
+    keep_largest: bool,
+) -> Vec<usize> {
+    let (set_partition, clear_partition): (Vec<usize>, Vec<usize>) =
+        v.iter().partition(|x| ((*x >> bit) & 1) != 0);
+    let keep_partition = match (
+        keep_largest,
+        set_partition.len().cmp(&clear_partition.len()),
+    ) {
         (false, Ordering::Less) => set_partition,
         (false, Ordering::Equal) => clear_partition,
         (false, Ordering::Greater) => clear_partition,
@@ -75,11 +100,24 @@ fn main() {
     let file = File::open(input_path).expect("failed to open INPUT file");
     let reader = BufReader::new(file);
 
-    let lines: Vec<String> = reader.lines().map(|x| x.expect("failed to read line")).collect();
+    let lines: Vec<String> = reader
+        .lines()
+        .map(|x| x.expect("failed to read line"))
+        .collect();
 
     let metrics = parse_report(&lines);
-    println!("gamma rate = {} | epsilon rate = {} | product = {}", metrics.0, metrics.1, metrics.0 * metrics.1);
-    println!("o2 rate = {} | co2 rate = {} | product = {}", metrics.2, metrics.3, metrics.2 * metrics.3);
+    println!(
+        "gamma rate = {} | epsilon rate = {} | product = {}",
+        metrics.0,
+        metrics.1,
+        metrics.0 * metrics.1
+    );
+    println!(
+        "o2 rate = {} | co2 rate = {} | product = {}",
+        metrics.2,
+        metrics.3,
+        metrics.2 * metrics.3
+    );
 }
 
 #[cfg(test)]
